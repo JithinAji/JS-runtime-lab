@@ -5,21 +5,21 @@ const codeElement = document.querySelector("textarea");
 const originalLog = console.log;
 
 runButton.addEventListener("click", () => {
-    outputElement.innerHTML = "";
+    outputElement.textContent = "";
 
     console.log = (...args) => {
         originalLog(...args);
-        outputElement.innerHTML += args.join(" ") + "<br>";
+        outputElement.textContent += args.join(" ") + "\n";
     };
 
     const codeToRun = codeElement.value;
     try {
-        const evalOutputValue = eval(codeToRun);
-        if (evalOutputValue !== undefined) {
-            outputElement.innerHTML += evalOutputValue;
+        const result = eval(codeToRun);
+        if (result !== undefined) {
+            outputElement.textContent += result;
         }
     } catch (error) {
-        outputElement.innerHTML += error + "<br>";
+        outputElement.textContent += error + "\n";
     } finally {
         console.log = originalLog;
     }
