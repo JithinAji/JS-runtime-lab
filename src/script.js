@@ -2,11 +2,12 @@ const runButton = document.querySelector("button");
 const outputElement = document.querySelector(".output");
 const codeElement = document.querySelector("textarea");
 
-const originalLog = console.log;
 
 runButton.addEventListener("click", () => {
     outputElement.textContent = "";
+    const originalLog = console.log;
 
+    // this prints console.log when eval calls
     console.log = (...args) => {
         originalLog(...args);
 
@@ -28,6 +29,9 @@ runButton.addEventListener("click", () => {
     } catch (error) {
         outputElement.textContent += error + "\n";
     } finally {
+        // restoring console.log 
+        // Without originalLog the console.log inside eval will be overridden
+        // and it will not print the console.log
         console.log = originalLog;
     }
 });
