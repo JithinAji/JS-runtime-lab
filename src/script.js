@@ -9,7 +9,14 @@ runButton.addEventListener("click", () => {
 
     console.log = (...args) => {
         originalLog(...args);
-        outputElement.textContent += args.join(" ") + "\n";
+
+        const output = args.map(arg => {
+            if (typeof arg === "object" && arg !== null) {
+                return JSON.stringify(arg);
+            }
+            return arg;
+        }).join(" ");
+        outputElement.textContent += output + "\n";
     };
 
     const codeToRun = codeElement.value;
