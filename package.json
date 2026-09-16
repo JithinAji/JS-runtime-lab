@@ -1,0 +1,21 @@
+{
+  "name": "js-runtime-lab",
+  "version": "1.0.0",
+  "description": "A small browser-based laboratory for experimenting with JavaScript execution, asynchronous behavior, browser APIs, and rendering.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.9.6"
+  }
+}
