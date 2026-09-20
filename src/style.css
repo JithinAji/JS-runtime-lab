@@ -37,6 +37,8 @@ button {
   flex: 1;
   height: 100%;
   padding: 0.75rem;
+  font-family: monospace;
+  white-space: pre-wrap;
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: #f9f9f9;
