@@ -75,6 +75,7 @@ function createMockEnvironment() {
   elements["toggle-option-step"] = createElement("span", "", ["toggle-option"]);
   elements["output"] = createElement("div", "", ["output"]);
   elements["textarea"] = createElement("textarea", "", []);
+  elements["editor-backdrop"] = createElement("div", "", ["editor-backdrop"]);
 
   global.document = {
     getElementById(id) {
@@ -83,6 +84,7 @@ function createMockEnvironment() {
     querySelector(selector) {
       if (selector === ".output") return elements["output"];
       if (selector === "textarea") return elements["textarea"];
+      if (selector === ".editor-backdrop") return elements["editor-backdrop"];
       return null;
     },
   };
@@ -210,4 +212,91 @@ test("All at once execution executes entire code", () => {
   elements["run-btn"].dispatchEvent({ type: "click" });
 
   assert.equal(elements["output"].textContent, "full\n42");
+});
+
+test("isExecutableLine distinguishes code from comments and blank lines", () => {
+  createMockEnvironment();
+  delete require.cache[require.resolve("../src/script.js")];
+  const runtime = require("../src/script.js");
+
+  assert.equal(runtime.isExecutableLine(""), false);
+  assert.equal(runtime.isExecutableLine("   \t"), false);
+  assert.equal(runtime.isExecutableLine("// comment"), false);
+  assert.equal(runtime.isExecutableLine("  // indented comment"), false);
+  assert.equal(runtime.isExecutableLine("/* block */"), false);
+  assert.equal(runtime.isExecutableLine(" * middle of block"), false);
+  assert.equal(runtime.isExecutableLine("console.log('hi');"), true);
+  assert.equal(runtime.isExecutableLine("const x = 1; // with comment"), true);
+});
+
+test("getExecutableStepIndices returns 1-based indices of executable lines", () => {
+  createMockEnvironment();
+  delete require.cache[require.resolve("../src/script.js")];
+  const runtime = require("../src/script.js");
+
+  const lines = ["// intro", "let a = 1;", "", "// middle", "console.log(a);"];
+  const indices = runtime.getExecutableStepIndices(lines);
+  assert.deepEqual(indices, [2, 5]);
+});
+
+test("Step navigation skips comments and blank lines while highlighting active line in backdrop", () => {
+  const elements = createMockEnvironment();
+  delete require.cache[require.resolve("../src/script.js")];
+  const runtime = require("../src/script.js");
+
+  elements["textarea"].value = [
+    "// line 1: comment",
+    'console.log("one");',
+    "",
+    "// line 4: another comment",
+    'console.log("two");',
+  ].join("\n");
+
+  // Switch to step mode
+  elements["toggle-btn"].dispatchEvent({
+    type: "click",
+    target: elements["toggle-btn"],
+  });
+
+  // Clicking Run should start at the first executable line (line 2)
+  elements["run-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 2);
+  assert.equal(elements["output"].textContent, "one\n");
+  assert.equal(elements["prev-btn"].disabled, true);
+  assert.equal(elements["next-btn"].disabled, false);
+
+  // Check backdrop contains active class on line 2
+  assert.match(
+    elements["editor-backdrop"].innerHTML,
+    /<div class="editor-line active">console\.log\(&quot;one&quot;\);<\/div>/,
+  );
+  assert.match(
+    elements["editor-backdrop"].innerHTML,
+    /<div class="editor-line">\/\/ line 1: comment<\/div>/,
+  );
+
+  // Next step should skip line 3 (blank) and line 4 (comment), landing on line 5
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 5);
+  assert.equal(elements["output"].textContent, "one\ntwo\n");
+  assert.equal(elements["prev-btn"].disabled, false);
+  assert.equal(elements["next-btn"].disabled, true);
+
+  // Check backdrop active line updated to line 5
+  assert.match(
+    elements["editor-backdrop"].innerHTML,
+    /<div class="editor-line active">console\.log\(&quot;two&quot;\);<\/div>/,
+  );
+
+  // Prev step should jump back to line 2
+  elements["prev-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 2);
+  assert.equal(elements["output"].textContent, "one\n");
+  assert.equal(elements["prev-btn"].disabled, true);
+  assert.equal(elements["next-btn"].disabled, false);
+
+  // Typing in textarea should reset currentStep and clear the backdrop highlight
+  elements["textarea"].dispatchEvent({ type: "input" });
+  assert.equal(runtime.getCurrentStep(), 0);
+  assert.equal(elements["editor-backdrop"].innerHTML, "");
 });
