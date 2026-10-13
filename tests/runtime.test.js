@@ -76,6 +76,9 @@ function createMockEnvironment() {
   elements["output"] = createElement("div", "", ["output"]);
   elements["textarea"] = createElement("textarea", "", []);
   elements["editor-backdrop"] = createElement("div", "", ["editor-backdrop"]);
+  elements["call-stack-list"] = createElement("div", "call-stack-list", [
+    "call-stack-list",
+  ]);
 
   global.document = {
     getElementById(id) {
@@ -299,4 +302,139 @@ test("Step navigation skips comments and blank lines while highlighting active l
   elements["textarea"].dispatchEvent({ type: "input" });
   assert.equal(runtime.getCurrentStep(), 0);
   assert.equal(elements["editor-backdrop"].innerHTML, "");
+});
+
+test("Interpreter execution jumps into function calls and manages call stack frames", () => {
+  const elements = createMockEnvironment();
+  delete require.cache[require.resolve("../src/script.js")];
+  const runtime = require("../src/script.js");
+
+  elements["textarea"].value = [
+    "function one() {",
+    '  console.log("Inside one");',
+    "",
+    "  function two() {",
+    '    console.log("Inside two");',
+    "  }",
+    "",
+    "  two();",
+    "}",
+    "",
+    'console.log("Before function call");',
+    "one();",
+    'console.log("After function call");',
+  ].join("\n");
+
+  // Switch to step mode
+  elements["toggle-btn"].dispatchEvent({
+    type: "click",
+    target: elements["toggle-btn"],
+  });
+
+  // Step 0: Should skip function declarations (lines 1-9) and start at line 11
+  elements["run-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 11);
+  assert.deepEqual(runtime.getCurrentCallStack(), ["Global"]);
+  assert.equal(elements["output"].textContent, "Before function call\n");
+  assert.equal(elements["prev-btn"].disabled, true);
+  assert.equal(elements["next-btn"].disabled, false);
+
+  // Step 1: Evaluates one() at line 12
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 12);
+  assert.deepEqual(runtime.getCurrentCallStack(), ["Global"]);
+
+  // Step 2: Enters one() and evaluates line 2
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 2);
+  assert.deepEqual(runtime.getCurrentCallStack(), ["Global", "one()"]);
+  assert.equal(
+    elements["output"].textContent,
+    "Before function call\nInside one\n",
+  );
+
+  // Step 3: Inside one(), skips two definition (lines 4-6) and evaluates two() at line 8
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 8);
+  assert.deepEqual(runtime.getCurrentCallStack(), ["Global", "one()"]);
+
+  // Step 4: Enters two() and evaluates line 5
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 5);
+  assert.deepEqual(runtime.getCurrentCallStack(), ["Global", "one()", "two()"]);
+  assert.equal(
+    elements["output"].textContent,
+    "Before function call\nInside one\nInside two\n",
+  );
+
+  // Step 5: two() and one() return, pops call stack back to Global, evaluates line 13
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 13);
+  assert.deepEqual(runtime.getCurrentCallStack(), ["Global"]);
+  assert.equal(
+    elements["output"].textContent,
+    "Before function call\nInside one\nInside two\nAfter function call\n",
+  );
+  assert.equal(elements["next-btn"].disabled, true);
+
+  // Step backward: goes back to line 5 with call stack intact
+  elements["prev-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 5);
+  assert.deepEqual(runtime.getCurrentCallStack(), ["Global", "one()", "two()"]);
+});
+
+test("Call stack frames track arguments, local variables, and return values", () => {
+  const elements = createMockEnvironment();
+  delete require.cache[require.resolve("../src/script.js")];
+  const runtime = require("../src/script.js");
+
+  elements["textarea"].value = [
+    "function add(a, b) {",
+    "  let sum = a + b;",
+    "  return sum;",
+    "}",
+    "",
+    "let result = add(10, 20);",
+    "console.log(result);",
+  ].join("\n");
+
+  elements["toggle-btn"].dispatchEvent({
+    type: "click",
+    target: elements["toggle-btn"],
+  });
+
+  // Step 0: Line 6 (let result = add(10, 20);)
+  elements["run-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 6);
+  let frames = runtime.getCurrentCallStackFrames();
+  assert.equal(frames.length, 1);
+  assert.equal(frames[0].name, "Global");
+  assert.equal(frames[0].locals.result, "<uninitialized>");
+
+  // Step 1: Enters add(10, 20) at line 2 (let sum = a + b;)
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 2);
+  frames = runtime.getCurrentCallStackFrames();
+  assert.equal(frames.length, 2);
+  assert.equal(frames[1].title, "add(10, 20)");
+  assert.deepEqual(frames[1].args, [10, 20]);
+  assert.equal(frames[1].locals.a, 10);
+  assert.equal(frames[1].locals.b, 20);
+  assert.equal(frames[1].locals.sum, "<uninitialized>");
+
+  // Step 2: Line 3 (return sum;)
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 3);
+  frames = runtime.getCurrentCallStackFrames();
+  assert.equal(frames.length, 2);
+  assert.equal(frames[1].locals.sum, 30);
+  assert.equal(frames[1].returnValue, 30);
+
+  // Step 3: Returns to Global context at line 7 (console.log(result);)
+  elements["next-btn"].dispatchEvent({ type: "click" });
+  assert.equal(runtime.getCurrentStep(), 7);
+  frames = runtime.getCurrentCallStackFrames();
+  assert.equal(frames.length, 1);
+  assert.equal(frames[0].locals.result, 30);
+  assert.equal(elements["output"].textContent, "30\n");
 });

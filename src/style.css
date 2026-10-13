@@ -249,6 +249,77 @@ textarea::placeholder {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
+/* Call Stack Visualization */
+.call-stack-container {
+  order: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.call-stack-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.call-stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 40px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 6px;
+  background-color: #0f172a;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+}
+
+.call-stack-frame {
+  padding: 6px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-radius: 4px;
+  background-color: var(--btn-secondary);
+  color: var(--text-main);
+  border-left: 3px solid #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.call-stack-frame.active {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-left-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.call-stack-frame .frame-header {
+  font-weight: 600;
+}
+
+.call-stack-frame .frame-details {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.call-stack-frame .frame-return {
+  font-size: 11px;
+  color: var(--accent-success);
+  font-weight: 500;
+}
+
+.call-stack-frame.empty {
+  color: var(--text-muted);
+  font-style: italic;
+  border-left: none;
+  background-color: transparent;
+  padding: 4px 2px;
+}
+
 /* Output Display Area */
 .output {
   flex: 1;

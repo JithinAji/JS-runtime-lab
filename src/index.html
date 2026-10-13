@@ -39,11 +39,19 @@
           <span class="toggle-option">Step By Step</span>
         </button>
       </div>
+      <!-- Call stack visualization -->
+      <div class="call-stack-container">
+        <span class="call-stack-label">Call Stack</span>
+        <div class="call-stack-list" id="call-stack-list">
+          <div class="call-stack-frame empty">(empty)</div>
+        </div>
+      </div>
     </div>
 
     <!-- add output area -->
     <div class="output"></div>
 
+    <script src="vendor/acorn.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
