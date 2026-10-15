@@ -116,32 +116,33 @@ textarea::placeholder {
 .controls {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: stretch;
-  gap: 1.25rem;
-  min-width: 220px;
+  width: 235px;
+  min-width: 235px;
+  height: 100%;
   padding: 1.25rem;
   background-color: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  align-self: center;
 }
 
-/* Order control elements visually */
+/* Main controls group: fills available space and centers its children */
+.controls-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: stretch;
+  gap: 1.25rem;
+  padding-bottom: 1rem;
+}
+
 .mode-container {
-  order: 1;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.btn-run {
-  order: 2;
-}
-
 .step-controls {
-  order: 3;
   display: flex;
   gap: 0.5rem;
 }
@@ -251,10 +252,11 @@ textarea::placeholder {
 
 /* Call Stack Visualization */
 .call-stack-container {
-  order: 4;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--panel-border);
 }
 
 .call-stack-label {
